@@ -49,13 +49,21 @@ class Survey < ActiveRecord::Base
   end
 
   def publish_to_users(users)
-    users.each { |user_id| self.survey_users.create(:user_id => user_id) } if finalized?
+    if finalized?
+      self.published_on = Date.today
+      self.save
+      users.each { |user_id| self.survey_users.create(:user_id => user_id) }
+    end
   end
 
   def share_with_organizations(organizations)
     organizations.each do |organization_id|
       self.participating_organizations.create(:organization_id => organization_id)
     end
+  end
+
+  def published?
+    !participating_organizations.empty? || !survey_users.empty?
   end
 
   def participating_organization_ids

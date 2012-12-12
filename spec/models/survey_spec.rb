@@ -126,18 +126,27 @@ describe Survey do
       survey.users_for_organization(access_token, 1).map{|user| {:id => user.id, :name => user.name} }.should_not include({:id => 2, :name => "John"})
     end
 
-    it "publishes survey to the given users" do
-      survey = FactoryGirl.create(:survey, :finalized => true)
-      users = [1, 2]
-      survey.publish_to_users(users)
-      survey.user_ids.should == users
-    end
+    context "while publishing" do
+      it "publishes survey to the given users" do
+        survey = FactoryGirl.create(:survey, :finalized => true)
+        users = [1, 2]
+        survey.publish_to_users(users)
+        survey.user_ids.should == users
+      end
 
-    it "does not allow publishing if it is not finalized" do
-      survey = FactoryGirl.create(:survey)
-      users = [3, 4]
-      survey.publish_to_users(users)
-      survey.user_ids.should == []
+      it "does not allow publishing if it is not finalized" do
+        survey = FactoryGirl.create(:survey)
+        users = [3, 4]
+        survey.publish_to_users(users)
+        survey.user_ids.should == []
+      end
+
+      it "sets the published_on to the date on which it is published" do
+        survey = FactoryGirl.create(:survey, :finalized => true)
+        users = [3, 4]
+        survey.publish_to_users(users)
+        survey.reload.published_on.should == Date.today
+      end
     end
   end
 
@@ -168,6 +177,24 @@ describe Survey do
       survey.share_with_organizations(organizations)
       survey.participating_organization_ids.should == organizations
     end
+  end
+
+  context "knows that its published" do
+
+    it "if it is shared with at least one organization" do
+      survey = FactoryGirl.create(:survey)
+      organizations = [1, 2]
+      survey.share_with_organizations(organizations)
+      survey.should be_published
+    end
+
+    it "if it is published to at least one user" do
+      survey = FactoryGirl.create(:survey, :finalized => true)
+      users = [1, 2]
+      survey.publish_to_users(users)
+      survey.should be_published
+    end
+
   end
 
   it "returns a list of first level questions" do
